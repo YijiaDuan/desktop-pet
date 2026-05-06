@@ -1,13 +1,13 @@
 [package]
-name = "desktop-goose"
+name = "desktop-pet"
 version = "0.1.0"
-description = "A cozy desktop goose."
+description = "Cozy desktop companions."
 authors = ["yijia"]
 edition = "2021"
 rust-version = "1.77"
 
 [lib]
-name = "desktop_goose_lib"
+name = "desktop_pet_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

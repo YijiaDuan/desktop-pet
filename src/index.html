@@ -2,9 +2,9 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8" />
-<title>Desktop Goose</title>
+<title>Desktop Pet</title>
 <style>
-  /* 关键：让整个窗口背景透明 */
+  /* 透明壳 */
   html, body {
     margin: 0; padding: 0;
     width: 100%; height: 100%;
@@ -13,97 +13,18 @@
     -webkit-user-select: none;
     user-select: none;
     cursor: default;
+    font-family: -apple-system, "PingFang SC", sans-serif;
   }
   body { display: flex; align-items: flex-end; justify-content: center; }
 
-  #goose-wrap {
+  #pet-container {
     position: relative;
     width: 200px; height: 200px;
     cursor: grab;
   }
-  #goose-wrap:active { cursor: grabbing; }
+  #pet-container:active { cursor: grabbing; }
 
-  /* 呼吸 */
-  @keyframes breathe {
-    0%, 100% { transform: scaleY(1) scaleX(1); }
-    50%      { transform: scaleY(1.03) scaleX(0.99); }
-  }
-  @keyframes sleepBreathe {
-    0%, 100% { transform: scaleY(1) scaleX(1); }
-    50%      { transform: scaleY(1.06) scaleX(0.97); }
-  }
-  #body-group {
-    transform-box: fill-box;
-    transform-origin: 50% 100%;
-    animation: breathe 3s ease-in-out infinite;
-  }
-  #goose.sleeping #body-group { animation: sleepBreathe 5s ease-in-out infinite; }
-
-  /* 翅膀拍 */
-  @keyframes flap {
-    0%, 100% { transform: rotate(0deg); }
-    25%      { transform: rotate(-25deg); }
-    75%      { transform: rotate(15deg); }
-  }
-  #wing { transform-box: fill-box; transform-origin: 80% 30%; }
-  #goose.honking #wing,
-  #goose.startled #wing { animation: flap .4s ease-in-out 3; }
-
-  /* 头晕 */
-  @keyframes wobble {
-    0%, 100% { transform: rotate(0deg) translateX(0); }
-    25%      { transform: rotate(-8deg) translateX(-2px); }
-    75%      { transform: rotate(8deg) translateX(2px); }
-  }
-  #head-group { transform-box: fill-box; transform-origin: 50% 100%; }
-  #goose.dizzy #head-group { animation: wobble .5s ease-in-out infinite; }
-
-  /* 受惊弹跳 */
-  @keyframes startleJump {
-    0%   { transform: translateY(0); }
-    30%  { transform: translateY(-30px); }
-    60%  { transform: translateY(0) scaleX(1.05) scaleY(0.95); }
-    100% { transform: translateY(0); }
-  }
-  #goose.startled { animation: startleJump .5s ease-out; }
-
-  /* 蹭头 */
-  @keyframes nuzzle {
-    0%, 100% { transform: rotate(0); }
-    50%      { transform: rotate(8deg); }
-  }
-  #goose.nuzzling #neck-head { animation: nuzzle .6s ease-in-out infinite; }
-
-  /* 拖拽时腿晃 */
-  @keyframes danglyLegs {
-    0%, 100% { transform: rotate(-8deg); }
-    50%      { transform: rotate(8deg); }
-  }
-  #goose.dragging #legs-group { animation: danglyLegs .4s ease-in-out infinite; }
-
-  #eye {
-    transform-box: fill-box;
-    transform-origin: 50% 50%;
-    transition: transform .08s;
-  }
-  #goose.blinking #eye { transform: scaleY(0.05); }
-  #goose.sleeping #eye { transform: scaleY(0.05); }
-  #goose.sleeping #eye-line { opacity: 1; }
-  #eye-line { opacity: 0; transition: opacity .2s; }
-
-  /* Z 字（睡眠泡泡） */
-  #zs { opacity: 0; transition: opacity .4s; }
-  #goose.sleeping #zs, #goose.drowsy #zs { opacity: 1; }
-  @keyframes zFloat {
-    0%   { transform: translate(0, 0) scale(1); opacity: 0; }
-    20%  { opacity: 1; }
-    100% { transform: translate(20px, -40px) scale(1.4); opacity: 0; }
-  }
-  #zs text { animation: zFloat 2.5s ease-out infinite; }
-  #zs text:nth-child(2) { animation-delay: .8s; }
-  #zs text:nth-child(3) { animation-delay: 1.6s; }
-
-  /* 气泡 */
+  /* 气泡（通用） */
   #bubble {
     position: absolute;
     background: #fff;
@@ -117,7 +38,7 @@
     transition: all .25s cubic-bezier(.5,1.6,.4,1);
     pointer-events: none;
     white-space: nowrap;
-    font-family: -apple-system, "PingFang SC", sans-serif;
+    z-index: 5;
   }
   #bubble.show { opacity: 1; transform: translateY(0) scale(1); }
   #bubble::after {
@@ -125,83 +46,50 @@
     border: 8px solid transparent; border-top-color: #333;
   }
 
-  /* 右键菜单 */
+  /* 右键菜单（通用） */
   #menu {
     position: fixed; z-index: 1000;
     background: rgba(255,255,255,0.98);
     border: 1px solid #ddd;
     border-radius: 8px;
     box-shadow: 0 8px 28px rgba(0,0,0,.18);
-    padding: 6px; min-width: 140px;
+    padding: 6px; min-width: 180px;
     display: none;
-    font: 13px -apple-system, "PingFang SC", sans-serif;
+    font-size: 13px;
   }
   #menu.show { display: block; }
   #menu div {
-    padding: 8px 12px; border-radius: 6px; cursor: pointer;
+    padding: 7px 12px; border-radius: 6px; cursor: pointer;
+    white-space: nowrap;
   }
   #menu div:hover { background: #f0f4f8; }
+  #menu div.disabled {
+    color: #aaa; cursor: not-allowed;
+  }
+  #menu div.disabled:hover { background: transparent; }
+  #menu div.checked { background: #eef5ff; }
+  #menu .menu-head {
+    padding: 4px 12px;
+    color: #888;
+    font-size: 11px;
+    cursor: default;
+  }
+  #menu .menu-head:hover { background: transparent; }
   #menu hr { border: none; border-top: 1px solid #eee; margin: 4px 0; }
 </style>
+
+<!-- 宠物专属样式被 main.js 注入到这里 -->
+<style id="pet-styles"></style>
 </head>
 <body>
 
-<div id="goose-wrap">
-  <div id="bubble">嘎！</div>
-  <svg id="goose" viewBox="0 0 200 200" width="200" height="200">
-    <ellipse cx="100" cy="180" rx="50" ry="6" fill="rgba(0,0,0,0.18)"/>
-
-    <g id="body-group">
-      <g id="legs-group">
-        <g id="legs">
-          <rect x="78"  y="155" width="6" height="18" fill="#ff8c42" rx="2"/>
-          <polygon points="70,173 92,173 86,180 76,180" fill="#ff8c42"/>
-          <rect x="106" y="155" width="6" height="18" fill="#e87530" rx="2"/>
-          <polygon points="98,173 120,173 114,180 104,180" fill="#e87530"/>
-        </g>
-      </g>
-
-      <polygon points="42,118 60,108 58,128" fill="#fff" stroke="#d8d8d8" stroke-width="1.5"/>
-
-      <ellipse cx="100" cy="130" rx="55" ry="38" fill="#fff" stroke="#d8d8d8" stroke-width="2"/>
-
-      <path id="wing"
-            d="M 78 115 Q 100 95, 135 110 Q 130 140, 100 145 Q 80 140, 78 115 Z"
-            fill="#fafafa" stroke="#d8d8d8" stroke-width="1.5"/>
-      <path d="M 90 120 Q 110 125, 125 122" stroke="#e0e0e0" stroke-width="1" fill="none"/>
-      <path d="M 88 130 Q 108 135, 122 132" stroke="#e0e0e0" stroke-width="1" fill="none"/>
-
-      <g id="neck-head">
-        <path d="M 110 100 Q 138 80, 142 55"
-              stroke="#fff" stroke-width="22" stroke-linecap="round" fill="none"/>
-        <g id="head-group">
-          <circle cx="142" cy="50" r="22" fill="#fff" stroke="#d8d8d8" stroke-width="2"/>
-          <polygon points="160,46 178,50 160,56" fill="#ff8c42" stroke="#e87530" stroke-width="1"/>
-          <line x1="163" y1="50" x2="174" y2="51" stroke="#c85a18" stroke-width="0.8"/>
-          <circle id="eye" cx="148" cy="44" r="3" fill="#222"/>
-          <line id="eye-line" x1="144" y1="44" x2="152" y2="44"
-                stroke="#222" stroke-width="1.5" stroke-linecap="round"/>
-          <circle id="blush" cx="138" cy="56" r="4" fill="#ffb6c1" opacity="0"/>
-        </g>
-      </g>
-    </g>
-
-    <g id="zs" font-family="serif" font-weight="bold" fill="#90a4ae">
-      <text x="160" y="40" font-size="14">z</text>
-      <text x="160" y="40" font-size="18">Z</text>
-      <text x="160" y="40" font-size="22">Z</text>
-    </g>
-  </svg>
+<div id="pet-container">
+  <div id="bubble"></div>
+  <!-- 当前宠物的 SVG 由 main.js 注入 -->
 </div>
 
-<div id="menu">
-  <div data-act="wake">叫醒</div>
-  <div data-act="sleep">让它睡</div>
-  <div data-act="honk">嘎一声</div>
-  <hr/>
-  <div data-act="quit">退出</div>
-</div>
+<div id="menu"></div>
 
-<script src="./main.js"></script>
+<script type="module" src="./main.js"></script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Desktop Goose",
+  "productName": "Desktop Pet",
   "version": "0.1.0",
-  "identifier": "net.yijia.desktopgoose",
+  "identifier": "net.yijia.desktoppet",
   "build": {
     "frontendDist": "../src",
     "devUrl": "http://localhost:1420",
@@ -15,7 +15,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Desktop Goose",
+        "title": "Desktop Pet",
         "width": 220,
         "height": 220,
         "x": 1200,
@@ -56,7 +56,7 @@
       "entitlements": null
     },
     "category": "Entertainment",
-    "shortDescription": "A cozy desktop goose.",
-    "longDescription": "Desktop Goose is a small companion that lives on your screen. It breathes, blinks, gets curious, sleeps when you ignore it, and honks when you click."
+    "shortDescription": "Cozy desktop companions.",
+    "longDescription": "Desktop Pet is a small companion that lives on your screen. Pick a pet (a goose for now, more on the way), and it'll breathe, blink, get curious about your cursor, and sleep when you ignore it."
   }
 }
