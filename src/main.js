@@ -10,6 +10,35 @@ import { PETS, DEFAULT_PET_ID, findPet } from './pets/index.js';
 const { getCurrentWindow, PhysicalPosition } = window.__TAURI__.window;
 const appWin = getCurrentWindow();
 
+const tauriCore  = window.__TAURI__.core   || window.__TAURI__;
+const tauriEvent = window.__TAURI__.event  || {};
+const tauriInvoke = tauriCore?.invoke ?? (() => Promise.resolve());
+const tauriListen = tauriEvent?.listen   ?? (async () => () => {});
+
+/* ---------- Click-through hitbox reporting (Windows back-end uses this) ----------
+ * The Rust side polls the global cursor 30x/sec and toggles
+ * `set_ignore_cursor_events` based on whether the cursor is inside the
+ * reported bbox. On macOS this command is a no-op. */
+let hitboxFullWindow = false;
+async function reportHitbox() {
+  try {
+    const r = petContainer.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    await tauriInvoke('update_pet_hitbox', {
+      x: Math.round(r.left   * dpr),
+      y: Math.round(r.top    * dpr),
+      w: Math.round(r.width  * dpr),
+      h: Math.round(r.height * dpr),
+      fullWindow: hitboxFullWindow,
+    });
+  } catch (_) { /* macOS / dev preview: command may be missing */ }
+}
+function setHitboxMode(full) {
+  if (hitboxFullWindow === full) return;
+  hitboxFullWindow = full;
+  reportHitbox();
+}
+
 const petContainer = document.getElementById('pet-container');
 const petStyles    = document.getElementById('pet-styles');
 const bubble       = document.getElementById('bubble');
@@ -78,8 +107,12 @@ function say(text, ms = 1200) {
   if (!text) return;
   bubble.textContent = text;
   bubble.classList.add('show');
+  setHitboxMode(true);
   clearTimeout(bubbleTimer);
-  bubbleTimer = setTimeout(() => bubble.classList.remove('show'), ms);
+  bubbleTimer = setTimeout(() => {
+    bubble.classList.remove('show');
+    if (!menu.classList.contains('show') && !isWindowDragging) setHitboxMode(false);
+  }, ms);
 }
 
 /* ---------- 头跟随光标 ---------- */
@@ -187,12 +220,17 @@ document.addEventListener('pointermove', async (e) => {
     didDrag = true;
     isWindowDragging = true;
     setState('dragging');
+    setHitboxMode(true);
     say(v('drag', '...'), 800);
     try { await appWin.startDragging(); }
     catch (err) { console.error('startDragging failed:', err); }
     setTimeout(() => {
       isWindowDragging = false;
       if (state === 'dragging') setState('idle');
+      reportHitbox();
+      if (!menu.classList.contains('show') && !bubble.classList.contains('show')) {
+        setHitboxMode(false);
+      }
     }, 100);
   }
 });
@@ -290,10 +328,16 @@ petContainer.addEventListener('contextmenu', e => {
   menu.style.left = x + 'px';
   menu.style.top  = y + 'px';
   menu.classList.add('show');
+  setHitboxMode(true);
 });
 
 document.addEventListener('click', e => {
-  if (!menu.contains(e.target)) menu.classList.remove('show');
+  if (!menu.contains(e.target)) {
+    if (menu.classList.contains('show')) {
+      menu.classList.remove('show');
+      if (!bubble.classList.contains('show') && !isWindowDragging) setHitboxMode(false);
+    }
+  }
 });
 
 menu.addEventListener('click', async e => {
@@ -466,3 +510,19 @@ function wakeUp() {
 
 /* ---------- 启动：挂载初始宠物 ---------- */
 mountPet(activePet);
+
+/* ---------- Windows: 上报 hitbox + 监听系统托盘事件 ---------- */
+reportHitbox();
+window.addEventListener('resize', reportHitbox);
+window.addEventListener('focus',  reportHitbox);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) reportHitbox();
+});
+
+(async () => {
+  try {
+    await tauriListen('tray://wake',  () => { wakeUp(); });
+    await tauriListen('tray://sleep', () => { setState('sleeping'); say(v('sleep','Zzz'), 1000); });
+    await tauriListen('tray://honk',  () => { onSingleClick(); });
+  } catch (_) { /* macOS / dev preview without tray */ }
+})();

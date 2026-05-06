@@ -1,0 +1,94 @@
+name: Windows build
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+      - 'windows-**'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel older runs on the same branch when a new commit is pushed.
+concurrency:
+  group: windows-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (Windows · ${{ matrix.target }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-pc-windows-msvc
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust (stable, ${{ matrix.target }})
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: ${{ matrix.target }}
+
+      - name: Cache Cargo build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          shared-key: windows-${{ matrix.target }}
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build (.msi + .exe via NSIS)
+        env:
+          # The Tauri build script downloads the WiX & NSIS toolchains the
+          # first time it bundles. They cache cleanly into the runner cache.
+          TAURI_SIGNING_PRIVATE_KEY: ''
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+        run: npm run build:windows
+
+      - name: List bundled artifacts
+        shell: pwsh
+        run: |
+          Write-Host '=== bundle/ tree ==='
+          if (Test-Path src-tauri/target/release/bundle) {
+            Get-ChildItem -Recurse src-tauri/target/release/bundle | Select-Object FullName, Length
+          } else {
+            Write-Error 'No bundle directory was produced.'
+            exit 1
+          }
+
+      - name: Upload .msi installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-pet-windows-msi
+          path: src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload .exe (NSIS) installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-pet-windows-nsis
+          path: src-tauri/target/release/bundle/nsis/*-setup.exe
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload raw executable (no installer)
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-pet-windows-exe
+          path: src-tauri/target/release/desktop-pet.exe
+          if-no-files-found: warn
+          retention-days: 14

@@ -35,7 +35,9 @@ Right-click your pet → **换一只** to switch. Selection is remembered betwee
 
 ## Run from source
 
-Requirements: Node 18+, Rust stable, Xcode Command Line Tools (macOS).
+### macOS
+
+Requirements: Node 18+, Rust stable, Xcode Command Line Tools.
 
 ```bash
 npm install
@@ -43,12 +45,41 @@ npm run dev          # hot-reload dev mode
 npm run build:dmg    # produces a .dmg in src-tauri/target/release/bundle/dmg/
 ```
 
-## Install the prebuilt DMG
+### Windows
 
-Until the app is signed with an Apple Developer ID, macOS Gatekeeper will refuse to open it on first launch:
+Requirements:
 
-1. Right-click the app in `/Applications` → **Open** → confirm.
-2. Or in Terminal: `xattr -cr "/Applications/Desktop Pet.app"`
+- Node 18+
+- Rust stable for `x86_64-pc-windows-msvc` (`winget install Rustlang.Rustup`)
+- **Microsoft C++ Build Tools** with the *Desktop development with C++* workload
+  (`winget install Microsoft.VisualStudio.2022.BuildTools --override "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"`)
+- **WebView2 Runtime** (preinstalled on Windows 11; on Windows 10 it ships with new versions of Edge — otherwise download the *Evergreen Bootstrapper* from Microsoft)
+
+```bash
+npm install
+npm run dev               # hot-reload dev mode
+npm run build:windows     # produces .msi + .exe (NSIS) in src-tauri/target/release/bundle/
+# or pick one
+npm run build:msi
+npm run build:nsis
+```
+
+The Windows build adds a few platform-specific niceties on top of the
+shared cross-platform behavior:
+
+- **System tray icon** with **叫醒 / 让它睡 / 打个招呼 / 显示·隐藏宠物 / 开机自启 / 退出**
+  (left-click the tray icon to bring the pet back if you hide it).
+- **Click-through outside the pet** — the transparent area around the goose
+  *doesn't* steal clicks from your desktop or whatever app is behind it.
+  Click the pet itself to interact, or grab it to drag it around.
+- **Optional autostart** via `tauri-plugin-autostart` — toggle from the tray.
+- **Skipped from the taskbar**, so it really does feel like a desktop creature
+  rather than an app window.
+
+#### Heads-up on first launch
+
+The installer is unsigned, so SmartScreen will say *"Windows protected your PC"*.
+Click **More info → Run anyway**. (Signing is on the roadmap.)
 
 ## Project layout
 
@@ -64,10 +95,11 @@ desktop-pet/
 │   ├── Cargo.toml
 │   ├── tauri.conf.json        # Window: transparent, always-on-top, no decorations
 │   ├── capabilities/          # Tauri 2 permissions
-│   ├── icons/                 # App icons (.png + .icns)
+│   ├── icons/                 # App icons (.png + .icns + .ico)
 │   └── src/
 │       ├── main.rs
-│       └── lib.rs
+│       ├── lib.rs             # cross-platform setup + autostart plugin
+│       └── windows_support.rs # Windows-only: tray icon + click-through polling
 └── package.json
 ```
 
@@ -88,7 +120,8 @@ That's it — no JS to write, no build step, no other files to touch.
 - [ ] Walking along the screen edge (Shimeji-style)
 - [ ] Seasonal skins per pet
 - [ ] Sound effects (off by default)
-- [ ] Windows + Linux builds
+- [x] Windows build
+- [ ] Linux build
 
 ## License
 
