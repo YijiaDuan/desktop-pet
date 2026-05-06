@@ -8,6 +8,7 @@
  * ========================================================== */
 
 import { goose } from './goose.js';
+import { cat }   from './cat.js';
 
 // 用占位项告诉用户「即将上线」
 const comingSoon = (id, name, emoji) => ({
@@ -16,7 +17,7 @@ const comingSoon = (id, name, emoji) => ({
 
 export const PETS = [
   goose,
-  comingSoon('cat',   '团子（猫）',     '🐱'),
+  cat,
   comingSoon('slime', '苔苔（史莱姆）', '🍡'),
 ];
 

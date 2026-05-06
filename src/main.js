@@ -87,8 +87,9 @@ function lookAt(mouseX, mouseY) {
   if (!headPivot) return;
   if (!LOOKAT_OK.has(state)) return;
   const r = petRoot.getBoundingClientRect();
-  const headX = r.left + r.width * 0.71;
-  const headY = r.top  + r.height * 0.25;
+  const hc = activePet.hooks?.headCenter || { x: 0.5, y: 0.5 };
+  const headX = r.left + r.width * hc.x;
+  const headY = r.top  + r.height * hc.y;
   const dx = mouseX - headX, dy = mouseY - headY;
   const angle = Math.atan2(dy, dx) * 180 / Math.PI;
   const clamped = Math.max(-25, Math.min(25, angle * 0.15));

@@ -35,9 +35,10 @@ export const goose = {
   },
 
   hooks: {
-    head:  '.goose-head-pivot',
-    eye:   '.goose-eye',
-    blush: '.goose-blush',
+    head:       '.goose-head-pivot',
+    headCenter: { x: 0.71, y: 0.25 },
+    eye:        '.goose-eye',
+    blush:      '.goose-blush',
   },
 
   svg: `
