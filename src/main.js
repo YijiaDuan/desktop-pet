@@ -7,7 +7,7 @@
 
 import { PETS, DEFAULT_PET_ID, findPet } from './pets/index.js';
 
-const { getCurrentWindow } = window.__TAURI__.window;
+const { getCurrentWindow, PhysicalPosition } = window.__TAURI__.window;
 const appWin = getCurrentWindow();
 
 const petContainer = document.getElementById('pet-container');
@@ -16,7 +16,16 @@ const bubble       = document.getElementById('bubble');
 const menu         = document.getElementById('menu');
 
 const STATES = ['idle','curious','drowsy','sleeping','honking',
-                'startled','dizzy','dragging','nuzzling','blinking'];
+                'startled','dizzy','dragging','nuzzling','blinking',
+                'eating','preening','peek','windy','walking','stretch'];
+
+// 状态被这些用户交互打断（清掉自发动作）
+const USER_INTERRUPTIBLE = new Set([
+  'eating','preening','peek','windy','walking','stretch','curious','drowsy'
+]);
+
+// lookAt 期间允许（其它状态有自己的头部动画，禁止覆盖）
+const LOOKAT_OK = new Set(['idle','curious','drowsy','nuzzling']);
 
 /* ---------- 当前宠物 + 状态 ---------- */
 let activePet = findPet(loadStoredPetId() || DEFAULT_PET_ID);
@@ -76,7 +85,7 @@ function say(text, ms = 1200) {
 /* ---------- 头跟随光标 ---------- */
 function lookAt(mouseX, mouseY) {
   if (!headPivot) return;
-  if (['sleeping','dragging','startled'].includes(state)) return;
+  if (!LOOKAT_OK.has(state)) return;
   const r = petRoot.getBoundingClientRect();
   const headX = r.left + r.width * 0.71;
   const headY = r.top  + r.height * 0.25;
@@ -304,13 +313,23 @@ menu.addEventListener('click', async e => {
   menu.classList.remove('show');
 });
 
-/* ---------- 闲置 → 困倦 → 睡眠 ---------- */
-const DROWSY_AFTER = 5 * 60 * 1000;
-const SLEEP_AFTER  = 15 * 60 * 1000;
+/* ---------- 闲置 → 困倦 → 睡眠 + 久坐提醒 ---------- */
+const DROWSY_AFTER     = 5 * 60 * 1000;
+const SLEEP_AFTER      = 15 * 60 * 1000;
+const STRETCH_INTERVAL = 90 * 60 * 1000;   // 久坐提醒
+const APP_STARTED_AT   = Date.now();
+let   lastStretchAt    = APP_STARTED_AT;
 
 function tick() {
   const idleFor = Date.now() - lastInput;
-  if (['dragging','startled','honking','dizzy','nuzzling'].includes(state)) {
+  if (['dragging','startled','honking','dizzy','nuzzling',
+       'eating','preening','peek','windy','walking','stretch'].includes(state)) {
+    requestAnimationFrame(tick); return;
+  }
+  // 久坐提醒（每 90 min 一次，仅在 idle 时插队）
+  if (state === 'idle' && Date.now() - lastStretchAt > STRETCH_INTERVAL) {
+    lastStretchAt = Date.now();
+    doStretch();
     requestAnimationFrame(tick); return;
   }
   if (idleFor > SLEEP_AFTER && state !== 'sleeping') {
@@ -324,6 +343,119 @@ function tick() {
   requestAnimationFrame(tick);
 }
 tick();
+
+function doStretch() {
+  setState('stretch');
+  say(v('stretch', '伸~~~'), 2200);
+  setTimeout(() => { if (state === 'stretch') setState('idle'); }, 2500);
+}
+
+/* ---------- 自发环境动作（preening / eating / peek / windy） ----------
+ * 30s–3min 随机插一个，仅在 idle 时；任何用户交互会立刻打断（通过状态保护）。
+ * --------------------------------------------------------------- */
+const AMBIENT_DURATIONS = {
+  preening: 2500,
+  eating:   2200,
+  peek:     1700,
+  windy:    2000,
+};
+const AMBIENT_WEIGHTS = {
+  preening: 0.35,
+  eating:   0.25,
+  peek:     0.20,
+  windy:    0.20,
+};
+
+function pickAmbient() {
+  const r = Math.random();
+  let acc = 0;
+  for (const [name, w] of Object.entries(AMBIENT_WEIGHTS)) {
+    acc += w;
+    if (r < acc) return name;
+  }
+  return 'preening';
+}
+
+function scheduleAmbient() {
+  const wait = 30_000 + Math.random() * 150_000; // 30s – 3min
+  setTimeout(() => {
+    if (state === 'idle' && Date.now() - lastInput > 8000) {
+      const pick = pickAmbient();
+      setState(pick);
+      say(v(pick, ''), AMBIENT_DURATIONS[pick]);
+      setTimeout(() => {
+        if (state === pick) setState('idle');
+      }, AMBIENT_DURATIONS[pick]);
+    }
+    scheduleAmbient();
+  }, wait);
+}
+scheduleAmbient();
+
+/* ---------- 走动 ---------- */
+const WALK_INTERVAL_MIN = 5  * 60 * 1000;
+const WALK_INTERVAL_MAX = 12 * 60 * 1000;
+let nextWalkAt = Date.now() + WALK_INTERVAL_MIN
+                 + Math.random() * (WALK_INTERVAL_MAX - WALK_INTERVAL_MIN);
+
+async function walkAround() {
+  if (state !== 'idle') return;
+  setState('walking');
+
+  let monitor, winSize, startPos;
+  try {
+    monitor  = await appWin.currentMonitor();
+    winSize  = await appWin.outerSize();
+    startPos = await appWin.outerPosition();
+  } catch (e) {
+    console.error('walk: get window info failed', e);
+    setState('idle'); return;
+  }
+  if (!monitor) { setState('idle'); return; }
+
+  const direction = Math.random() < 0.5 ? -1 : 1;
+  const distance  = 80 + Math.random() * 220;
+  const minX = monitor.position.x;
+  const maxX = monitor.position.x + monitor.size.width - winSize.width;
+  const targetX = Math.max(minX, Math.min(maxX, startPos.x + direction * distance));
+  // 如果到边了走不动，就反向
+  const realDist = targetX - startPos.x;
+  const finalDirection = realDist === 0 ? -direction : Math.sign(realDist);
+  petRoot.classList.toggle('walking-left', finalDirection < 0);
+
+  const duration  = 3500;
+  const startTime = performance.now();
+
+  function step() {
+    if (state !== 'walking') {
+      petRoot.classList.remove('walking-left');
+      nextWalkAt = Date.now() + WALK_INTERVAL_MIN
+                   + Math.random() * (WALK_INTERVAL_MAX - WALK_INTERVAL_MIN);
+      return;
+    }
+    const t = Math.min((performance.now() - startTime) / duration, 1);
+    const x = startPos.x + (targetX - startPos.x) * t;
+    // 行走 bob：8 步小幅上下
+    const bob = -Math.abs(Math.sin(t * Math.PI * 8)) * 4;
+    appWin.setPosition(new PhysicalPosition(
+      Math.round(x), Math.round(startPos.y + bob)
+    )).catch(() => {});
+    if (t < 1) {
+      requestAnimationFrame(step);
+    } else {
+      petRoot.classList.remove('walking-left');
+      setState('idle');
+      nextWalkAt = Date.now() + WALK_INTERVAL_MIN
+                   + Math.random() * (WALK_INTERVAL_MAX - WALK_INTERVAL_MIN);
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+// 走动调度（独立小循环，避免和 ambient 抢主调度）
+setInterval(() => {
+  if (Date.now() > nextWalkAt && state === 'idle') walkAround();
+}, 5000);
 
 function wakeUp() {
   setState('curious');

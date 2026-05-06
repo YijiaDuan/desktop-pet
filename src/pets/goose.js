@@ -25,6 +25,13 @@ export const goose = {
     sleep:    'Zzz',
     dizzy:    '@_@',
     autosleep:'Zzz...',
+    // 自发动作
+    eating:   '啄啄',
+    preening: '',          // 静音
+    peek:     '...',
+    windy:    '咦~',
+    walking:  '',          // 静音
+    stretch:  '伸—个—懒—腰—',
   },
 
   hooks: {
@@ -172,5 +179,85 @@ export const goose = {
     .pet-goose .goose-zs text { animation: goose-z-float 2.5s ease-out infinite; }
     .pet-goose .goose-zs text:nth-child(2) { animation-delay: .8s; }
     .pet-goose .goose-zs text:nth-child(3) { animation-delay: 1.6s; }
+
+    /* ====== 自发动作 ====== */
+
+    /* 啄食：脖子俯冲 → 收起 → 再俯冲 */
+    @keyframes goose-peck {
+      0%, 100% { transform: rotate(0deg); }
+      20%      { transform: rotate(45deg) translateX(-4px) translateY(8px); }
+      35%      { transform: rotate(0deg); }
+      55%      { transform: rotate(48deg) translateX(-4px) translateY(8px); }
+      70%      { transform: rotate(0deg); }
+    }
+    .pet-goose.eating .goose-neck-head {
+      transform-box: fill-box;
+      transform-origin: 0% 100%;
+      animation: goose-peck 2.2s ease-in-out;
+    }
+
+    /* 整理羽毛：头转向后背、上下蹭 */
+    @keyframes goose-preen {
+      0%, 100% { transform: rotate(0deg) translate(0, 0); }
+      25%      { transform: rotate(-130deg) translate(-30px, 30px); }
+      50%      { transform: rotate(-110deg) translate(-25px, 22px); }
+      75%      { transform: rotate(-130deg) translate(-32px, 32px); }
+    }
+    .pet-goose.preening .goose-neck-head {
+      transform-box: fill-box;
+      transform-origin: 0% 100%;
+      animation: goose-preen 2.5s ease-in-out;
+    }
+
+    /* 探头：head 微微前倾再回 */
+    @keyframes goose-peek {
+      0%, 100% { transform: translate(0, 0) rotate(0); }
+      35%, 65% { transform: translate(2px, -3px) rotate(-6deg); }
+    }
+    .pet-goose.peek .goose-head-pivot {
+      animation: goose-peek 1.7s ease-in-out;
+    }
+
+    /* 起风：身体左右轻摇 + 翅膀飘 */
+    @keyframes goose-windy-body {
+      0%, 100% { transform: rotate(0deg); }
+      25%      { transform: rotate(-3deg); }
+      75%      { transform: rotate(3deg); }
+    }
+    @keyframes goose-windy-wing {
+      0%, 100% { transform: rotate(0); }
+      50%      { transform: rotate(-18deg); }
+    }
+    .pet-goose.windy .goose-body { animation: goose-windy-body 1s ease-in-out 2; }
+    .pet-goose.windy .goose-wing { animation: goose-windy-wing .5s ease-in-out 4; }
+
+    /* ====== 走动 ====== */
+    /* 身体上下颠 + 腿替换抬起；窗口本体的位移由 JS 用 setPosition 推 */
+    @keyframes goose-walk-bob {
+      0%, 100% { transform: translateY(0); }
+      25%, 75% { transform: translateY(-2px); }
+    }
+    .pet-goose.walking .goose-body {
+      animation: goose-walk-bob .35s linear infinite;
+    }
+    /* 朝左走时整体翻转 */
+    .pet-goose.walking-left { transform: scaleX(-1); }
+
+    /* ====== 久坐提醒：大幅伸展 ====== */
+    @keyframes goose-stretch-body {
+      0%, 100% { transform: scaleY(1) scaleX(1); }
+      30%, 70% { transform: scaleY(1.18) scaleX(0.9); }
+    }
+    @keyframes goose-stretch-wing {
+      0%, 100% { transform: rotate(0); }
+      30%, 70% { transform: rotate(-50deg); }
+    }
+    @keyframes goose-stretch-neck {
+      0%, 100% { transform: rotate(0); }
+      30%, 70% { transform: rotate(-15deg) translateY(-10px); }
+    }
+    .pet-goose.stretch .goose-body      { animation: goose-stretch-body  2.2s ease-in-out; }
+    .pet-goose.stretch .goose-wing      { animation: goose-stretch-wing  2.2s ease-in-out; }
+    .pet-goose.stretch .goose-neck-head { animation: goose-stretch-neck  2.2s ease-in-out; }
   `,
 };
