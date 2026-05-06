@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#fff9e3"/>
+      <stop offset="100%" stop-color="#ffd866"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+  <g transform="translate(180,160) scale(3.3)">
+    <ellipse cx="100" cy="180" rx="50" ry="6" fill="rgba(0,0,0,0.18)"/>
+    <polygon points="42,118 60,108 58,128" fill="#fff" stroke="#d8d8d8" stroke-width="1.5"/>
+    <ellipse cx="100" cy="130" rx="55" ry="38" fill="#fff" stroke="#d8d8d8" stroke-width="2"/>
+    <path d="M 78 115 Q 100 95, 135 110 Q 130 140, 100 145 Q 80 140, 78 115 Z" fill="#fafafa" stroke="#d8d8d8" stroke-width="1.5"/>
+    <rect x="78"  y="155" width="6" height="18" fill="#ff8c42" rx="2"/>
+    <polygon points="70,173 92,173 86,180 76,180" fill="#ff8c42"/>
+    <rect x="106" y="155" width="6" height="18" fill="#e87530" rx="2"/>
+    <polygon points="98,173 120,173 114,180 104,180" fill="#e87530"/>
+    <path d="M 110 100 Q 138 80, 142 55" stroke="#fff" stroke-width="22" stroke-linecap="round" fill="none"/>
+    <circle cx="142" cy="50" r="22" fill="#fff" stroke="#d8d8d8" stroke-width="2"/>
+    <polygon points="160,46 178,50 160,56" fill="#ff8c42"/>
+    <circle cx="148" cy="44" r="3" fill="#222"/>
+  </g>
+</svg>

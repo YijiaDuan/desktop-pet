@@ -1,0 +1,21 @@
+# Node
+node_modules/
+npm-debug.log*
+.pnpm-debug.log*
+
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Build artifacts
+*.dmg
+*.app

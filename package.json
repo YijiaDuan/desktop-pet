@@ -1,0 +1,19 @@
+{
+  "name": "desktop-goose",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A cozy desktop goose that lives on your screen.",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "build:dmg": "tauri build --bundles dmg"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.1.0"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.1.1"
+  }
+}

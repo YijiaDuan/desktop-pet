@@ -1,0 +1,62 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Desktop Goose",
+  "version": "0.1.0",
+  "identifier": "net.yijia.desktopgoose",
+  "build": {
+    "frontendDist": "../src",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "",
+    "beforeBuildCommand": ""
+  },
+  "app": {
+    "macOSPrivateApi": true,
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Desktop Goose",
+        "width": 220,
+        "height": 220,
+        "x": 1200,
+        "y": 700,
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "skipTaskbar": false,
+        "shadow": false,
+        "visibleOnAllWorkspaces": true,
+        "fullscreen": false,
+        "minimizable": false,
+        "maximizable": false,
+        "titleBarStyle": "Transparent",
+        "hiddenTitle": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["dmg", "app"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns"
+    ],
+    "macOS": {
+      "frameworks": [],
+      "minimumSystemVersion": "11.0",
+      "exceptionDomain": "",
+      "signingIdentity": null,
+      "providerShortName": null,
+      "entitlements": null
+    },
+    "category": "Entertainment",
+    "shortDescription": "A cozy desktop goose.",
+    "longDescription": "Desktop Goose is a small companion that lives on your screen. It breathes, blinks, gets curious, sleeps when you ignore it, and honks when you click."
+  }
+}
