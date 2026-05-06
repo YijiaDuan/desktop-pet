@@ -1,8 +1,8 @@
 {
-  "name": "desktop-goose",
+  "name": "desktop-pet",
   "private": true,
   "version": "0.1.0",
-  "description": "A cozy desktop goose that lives on your screen.",
+  "description": "Cozy desktop companions that live on your screen. First up: a goose.",
   "type": "module",
   "scripts": {
     "tauri": "tauri",
