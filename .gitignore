@@ -19,3 +19,8 @@ Thumbs.db
 # Build artifacts
 *.dmg
 *.app
+*.msi
+*.exe
+
+# Locally downloaded CI artifacts
+.ci-artifacts/

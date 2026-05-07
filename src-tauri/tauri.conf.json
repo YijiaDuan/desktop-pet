@@ -24,7 +24,7 @@
         "decorations": false,
         "alwaysOnTop": true,
         "resizable": false,
-        "skipTaskbar": false,
+        "skipTaskbar": true,
         "shadow": false,
         "visibleOnAllWorkspaces": true,
         "fullscreen": false,
@@ -40,12 +40,13 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["dmg", "app"],
+    "targets": ["dmg", "app", "msi", "nsis"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
-      "icons/icon.icns"
+      "icons/icon.icns",
+      "icons/icon.ico"
     ],
     "macOS": {
       "frameworks": [],
@@ -54,6 +55,19 @@
       "signingIdentity": null,
       "providerShortName": null,
       "entitlements": null
+    },
+    "windows": {
+      "wix": {
+        "language": ["en-US", "zh-CN"]
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English", "SimpChinese"]
+      },
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "allowDowngrades": true
     },
     "category": "Entertainment",
     "shortDescription": "Cozy desktop companions.",
