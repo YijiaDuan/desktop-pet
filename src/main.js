@@ -7,8 +7,13 @@
 
 import { PETS, DEFAULT_PET_ID, findPet } from './pets/index.js';
 
-const { getCurrentWindow, PhysicalPosition, PhysicalSize } = window.__TAURI__.window;
+const { getCurrentWindow } = window.__TAURI__.window;
 const appWin = getCurrentWindow();
+// Tauri 2 在某些版本把尺寸/位置类放进 __TAURI__.dpi，旧版本在 .window
+const _dpiNs = window.__TAURI__.dpi || window.__TAURI__.window;
+const PhysicalPosition = _dpiNs.PhysicalPosition;
+const LogicalPosition  = _dpiNs.LogicalPosition;
+const LogicalSize      = _dpiNs.LogicalSize;
 
 const tauriCore  = window.__TAURI__.core   || window.__TAURI__;
 const tauriEvent = window.__TAURI__.event  || {};
@@ -329,28 +334,32 @@ let menuShiftedBy = 0;  // 如果靠右屏边，先把整个窗口左移多少
 async function openMenu() {
   rebuildMenu();
 
-  // 如果窗口靠右、向右展开会出屏，就先把窗口整体左移
+  // 关键：CSS / MENU_W 是 logical 像素，但 outerPosition()/monitor.size 是 physical。
+  // 全部换算到 logical 再算屏幕边界。
   try {
     const monitor = await appWin.currentMonitor();
     const winPos  = await appWin.outerPosition();
     if (monitor) {
-      const screenRight = monitor.position.x + monitor.size.width - 4;
-      const wouldExtendTo = winPos.x + MENU_W;
-      menuShiftedBy = wouldExtendTo > screenRight
-        ? wouldExtendTo - screenRight
+      const scale = monitor.scaleFactor || 1;
+      const winLogicalX     = winPos.x / scale;
+      const winLogicalY     = winPos.y / scale;
+      const screenLogicalR  = (monitor.position.x + monitor.size.width) / scale - 4;
+      const wouldExtendTo   = winLogicalX + MENU_W;
+      menuShiftedBy = wouldExtendTo > screenLogicalR
+        ? Math.ceil(wouldExtendTo - screenLogicalR)
         : 0;
       if (menuShiftedBy > 0) {
-        await appWin.setPosition(new PhysicalPosition(
-          winPos.x - menuShiftedBy, winPos.y
+        await appWin.setPosition(new LogicalPosition(
+          winLogicalX - menuShiftedBy, winLogicalY
         ));
       }
     }
-  } catch (_) { menuShiftedBy = 0; }
+  } catch (e) { console.error('openMenu position calc failed:', e); menuShiftedBy = 0; }
 
-  try { await appWin.setSize(new PhysicalSize(MENU_W, MENU_H)); }
+  try { await appWin.setSize(new LogicalSize(MENU_W, MENU_H)); }
   catch (e) { console.error('setSize failed:', e); }
 
-  // 菜单贴在鹅的右边
+  // 菜单贴在鹅的右边（226px 留出右移后的空间）
   menu.style.left = '226px';
   menu.style.top  = '14px';
   menu.classList.add('show');
@@ -361,15 +370,17 @@ async function closeMenu() {
   if (!menu.classList.contains('show')) return;
   menu.classList.remove('show');
 
-  try { await appWin.setSize(new PhysicalSize(NORMAL_W, NORMAL_H)); }
+  try { await appWin.setSize(new LogicalSize(NORMAL_W, NORMAL_H)); }
   catch (_) {}
 
-  // 还原刚才向左挪的窗口
+  // 把刚才向左挪的窗口还原（仍按 logical 算）
   if (menuShiftedBy > 0) {
     try {
-      const winPos = await appWin.outerPosition();
-      await appWin.setPosition(new PhysicalPosition(
-        winPos.x + menuShiftedBy, winPos.y
+      const monitor = await appWin.currentMonitor();
+      const scale   = monitor?.scaleFactor || 1;
+      const winPos  = await appWin.outerPosition();
+      await appWin.setPosition(new LogicalPosition(
+        winPos.x / scale + menuShiftedBy, winPos.y / scale
       ));
     } catch (_) {}
     menuShiftedBy = 0;
@@ -557,7 +568,10 @@ function wakeUp() {
   lastInput = Date.now();
 }
 
-/* ---------- 启动：挂载初始宠物 ---------- */
+/* ---------- 启动：强制 logical 尺寸（绕开 retina 半身bug）+ 挂载初始宠物 ---------- */
+(async () => {
+  try { await appWin.setSize(new LogicalSize(NORMAL_W, NORMAL_H)); } catch (_) {}
+})();
 mountPet(activePet);
 
 /* ---------- Windows: 上报 hitbox + 监听系统托盘事件 ---------- */
