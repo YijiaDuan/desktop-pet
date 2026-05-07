@@ -16,10 +16,10 @@
     font-family: -apple-system, "PingFang SC", "Microsoft YaHei UI",
                  "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
   }
-  body { display: flex; align-items: flex-end; justify-content: center; }
-
+  /* 鹅默认贴在窗口左下角，菜单弹出后窗口横向加宽，鹅就被自然「让到左边」 */
   #pet-container {
-    position: relative;
+    position: absolute;
+    left: 10px; bottom: 0;
     width: 200px; height: 200px;
     cursor: grab;
   }

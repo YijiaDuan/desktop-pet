@@ -7,7 +7,7 @@
 
 import { PETS, DEFAULT_PET_ID, findPet } from './pets/index.js';
 
-const { getCurrentWindow, PhysicalPosition } = window.__TAURI__.window;
+const { getCurrentWindow, PhysicalPosition, PhysicalSize } = window.__TAURI__.window;
 const appWin = getCurrentWindow();
 
 const tauriCore  = window.__TAURI__.core   || window.__TAURI__;
@@ -320,24 +320,73 @@ function rebuildMenu() {
   add('退出', 'quit');
 }
 
-petContainer.addEventListener('contextmenu', e => {
-  e.preventDefault();
+/* ---------- 菜单的窗口尺寸切换 ---------- */
+const NORMAL_W = 220, NORMAL_H = 220;
+const MENU_W   = 420, MENU_H   = 240;   // 鹅留在左 220、菜单贴右
+
+let menuShiftedBy = 0;  // 如果靠右屏边，先把整个窗口左移多少
+
+async function openMenu() {
   rebuildMenu();
-  const x = Math.min(e.clientX, window.innerWidth  - 180);
-  const y = Math.min(e.clientY, window.innerHeight - 220);
-  menu.style.left = x + 'px';
-  menu.style.top  = y + 'px';
+
+  // 如果窗口靠右、向右展开会出屏，就先把窗口整体左移
+  try {
+    const monitor = await appWin.currentMonitor();
+    const winPos  = await appWin.outerPosition();
+    if (monitor) {
+      const screenRight = monitor.position.x + monitor.size.width - 4;
+      const wouldExtendTo = winPos.x + MENU_W;
+      menuShiftedBy = wouldExtendTo > screenRight
+        ? wouldExtendTo - screenRight
+        : 0;
+      if (menuShiftedBy > 0) {
+        await appWin.setPosition(new PhysicalPosition(
+          winPos.x - menuShiftedBy, winPos.y
+        ));
+      }
+    }
+  } catch (_) { menuShiftedBy = 0; }
+
+  try { await appWin.setSize(new PhysicalSize(MENU_W, MENU_H)); }
+  catch (e) { console.error('setSize failed:', e); }
+
+  // 菜单贴在鹅的右边
+  menu.style.left = '226px';
+  menu.style.top  = '14px';
   menu.classList.add('show');
   setHitboxMode(true);
+}
+
+async function closeMenu() {
+  if (!menu.classList.contains('show')) return;
+  menu.classList.remove('show');
+
+  try { await appWin.setSize(new PhysicalSize(NORMAL_W, NORMAL_H)); }
+  catch (_) {}
+
+  // 还原刚才向左挪的窗口
+  if (menuShiftedBy > 0) {
+    try {
+      const winPos = await appWin.outerPosition();
+      await appWin.setPosition(new PhysicalPosition(
+        winPos.x + menuShiftedBy, winPos.y
+      ));
+    } catch (_) {}
+    menuShiftedBy = 0;
+  }
+
+  if (!bubble.classList.contains('show') && !isWindowDragging) {
+    setHitboxMode(false);
+  }
+}
+
+petContainer.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  openMenu();
 });
 
 document.addEventListener('click', e => {
-  if (!menu.contains(e.target)) {
-    if (menu.classList.contains('show')) {
-      menu.classList.remove('show');
-      if (!bubble.classList.contains('show') && !isWindowDragging) setHitboxMode(false);
-    }
-  }
+  if (!menu.contains(e.target)) closeMenu();
 });
 
 menu.addEventListener('click', async e => {
@@ -355,7 +404,7 @@ menu.addEventListener('click', async e => {
       say(pet.emoji, 800);
     }
   }
-  menu.classList.remove('show');
+  closeMenu();
 });
 
 /* ---------- 闲置 → 困倦 → 睡眠 + 久坐提醒 ---------- */

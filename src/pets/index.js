@@ -10,15 +10,14 @@
 import { goose } from './goose.js';
 import { cat }   from './cat.js';
 
-// 用占位项告诉用户「即将上线」
-const comingSoon = (id, name, emoji) => ({
-  id, displayName: name, emoji, available: false,
-});
+// 暂时没有 coming-soon 项；保留这个工厂方便以后再加
+// const comingSoon = (id, name, emoji) => ({
+//   id, displayName: name, emoji, available: false,
+// });
 
 export const PETS = [
   goose,
   cat,
-  comingSoon('slime', '苔苔（史莱姆）', '🍡'),
 ];
 
 export const DEFAULT_PET_ID = 'goose';
